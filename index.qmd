@@ -3,6 +3,7 @@ title: "mywebsite"
 ---
 
 # Huanran Sun
+![Huanran Sun-cat](photo.jpg){width=200}
 
 ## Credentials
 
