@@ -1,0 +1,13 @@
+---
+title: "Assignment 2"
+author: "Huanran Sun"
+date: "2026-11-05"
+description: "Applied Econometrics: OLS standard errors and simulation."
+resources:
+  - assignment-2.pdf
+  - assignment-2.qmd
+---
+
+[View or download the assignment PDF](assignment-2.pdf)
+
+<a href="assignment-2.qmd" download="econ_7201_assignment_2_Huanran_Sun.qmd">Download the Quarto source (.qmd)</a>

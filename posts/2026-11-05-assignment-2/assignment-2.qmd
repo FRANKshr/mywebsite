@@ -1,0 +1,295 @@
+---
+title: |
+  | ECON 7201
+  | Applied Econometrics
+subtitle: "Assignment 2"
+author: "Huanran Sun"
+format: 
+  pdf:
+    include-in-header: 
+      text: |
+        \usepackage{fancyhdr}
+        \fancypagestyle{style2}{
+        \fancyhf{}
+        \fancyhead[R]{Assignment 2}
+        \fancyhead[L]{ECON 7201}
+        \fancyfoot[C]{\thepage}
+        \renewcommand{\headrulewidth}{1pt}
+        }
+        \pagestyle{style2}
+execute: 
+  eval: true
+  echo: true
+---
+
+```{r}
+#| label: setup 
+#| include: FALSE
+
+#install.packages("tikzDevice")
+# Load the tikzDevice library
+library(tikzDevice)
+
+# Set the default graphics device to tikz for the entire document
+knitr::opts_chunk$set(dev = 'tikz', fig.width = 6, fig.height = 4)
+
+set.seed(42)
+```
+
+\vspace{-1in}
+
+## Due Date
+
+**November 5, 2026** at 11:59 PM
+
+## Directions
+
+Answer all questions. Upload both a PDF and Quarto file to your website in a new blog post.  
+
+# Git and GitHub
+
+1. 
+    (a) Create a new R project in your **econ_3201** directory called **assignment_2**.
+    (b) Download the assignment PDF and Quarto file the **assignment_2** folder.
+    (c) Commit and push the changes to your **econ_3201** repository on [GitHub.com](GitHub.com).
+
+
+# LaTeX
+
+Matrices are created in LaTeX using the `\begin{bmatrix}...\end{bmatrix}` command. To separate entries along the same row, use `&`. To end a line, use `\\`. To make vertical elipses ($\vdots$), use `\vdots`. Practice writing the following matrices and vectors in LaTeX. Write the following matrices in LaTeX.
+
+2.
+>(a) 
+
+:::{.callout-tip}
+
+$$
+X^\top X =
+\begin{bmatrix}
+n & \sum_{i=1}^{n} x_{1i} & \sum_{i=1}^{n} x_{2i} \\
+\sum_{i=1}^{n} x_{1i} & \sum_{i=1}^{n} x_{1i}^{2} & \sum_{i=1}^{n} x_{1i}x_{2i} \\
+\sum_{i=1}^{n} x_{2i} & \sum_{i=1}^{n} x_{1i}x_{2i} & \sum_{i=1}^{n} x_{2i}^{2}
+\end{bmatrix}
+$$
+:::
+
+>(b) 
+
+:::{.callout-tip}
+
+$$
+\Omega =
+\begin{bmatrix}
+\sigma_1^2 & 0 & 0 & 0 \\
+0 & \sigma_2^2 & 0 & 0 \\
+0 & 0 & \sigma_3^2 & 0 \\
+0 & 0 & 0 & \sigma_4^2
+\end{bmatrix}
+$$
+:::
+
+# R
+
+3. In this question we compare standard errors based on (incorrect) asymptotic assumptions with those based on alternate (appropriate) estimator (White). Consider one sample drawn from the following data generating process
+(DGP) which we will simulate in `R`:
+
+```{r}
+set.seed(123)
+n <- 25
+x <- rnorm(n,mean=0.0,sd=1.0)
+beta0 <- 1
+beta1 <- 0
+## x is irrelevant in this model, the data generating process is as follows:
+dgp <- beta0 + beta1*x
+## The residual is heteroskedastic by construction
+e <- x^2*rnorm(n,mean=0.0,sd=1.0)
+y <- dgp + e
+```
+
+> (a) Compute the OLS estimator of $\beta_2$ and its standard error using the `lm()` command in `R` for the model $y_i=\beta_1+\beta_2 x_i+\epsilon_i$ based on the DGP given above.
+
+:::{.callout-tip}
+
+I use `lm()` to estimate the model.
+
+```{r}
+model <- lm(y ~ x)
+
+round(
+  coef(summary(model))["x", c("Estimate", "Std. Error")],
+  4
+)
+```
+
+The slope estimate is 0.4610. Its standard error is 0.2563.
+:::
+
+> (b) Next, compute the standard error of $\hat\beta_2$ by computing $\hat\sigma^2(X'X)^{-1}$ in `R` using matrix commands, and verify that the two standard error estimates are identical.
+
+:::{.callout-tip}
+
+I calculate the covariance matrix using matrix operations.
+
+```{r}
+X <- cbind(1, x)
+
+beta_hat <- solve(t(X) %*% X) %*% t(X) %*% y
+residuals_hat <- y - X %*% beta_hat
+
+sigma2_hat <- as.numeric(
+  t(residuals_hat) %*% residuals_hat
+) / (n - ncol(X))
+
+V_hat <- sigma2_hat * solve(t(X) %*% X)
+
+se_matrix <- sqrt(V_hat[2, 2])
+se_lm <- coef(summary(model))["x", "Std. Error"]
+
+round(c(Matrix = se_matrix, lm = se_lm), 4)
+isTRUE(all.equal(unname(se_matrix), unname(se_lm)))
+```
+
+Both methods give a standard error of 0.2563.
+The check returns TRUE.
+:::
+
+> (c) Compute White's heteroskedasticity consistent covariance matrix estimator using matrices in R and report the White estimator of the standard error of $\hat\beta_2$. Compare this with that from 3 (a) above.
+
+:::{.callout-tip}
+
+I use the squared residuals to calculate White's covariance matrix.
+
+```{r}
+XtX_inv <- solve(t(X) %*% X)
+Omega_hat <- diag(as.numeric(residuals_hat)^2)
+
+V_white <- XtX_inv %*% t(X) %*% Omega_hat %*%
+  X %*% XtX_inv
+
+round(V_white, 4)
+
+se_white <- sqrt(V_white[2, 2])
+
+round(c(OLS = se_lm, White = se_white), 4)
+```
+
+The White standard error is 0.4529.
+It is larger than the ordinary standard error of 0.2563.
+The errors are heteroskedastic, so the White estimator is appropriate.
+:::
+
+&nbsp;
+
+4. Let $\hat{\theta}$ be an estimator for the population parameter $\theta$. $\hat{\theta}$ is said to be unbiased if $E(\hat\theta)=\theta$. That is, if the mean of the sampling distribution of $\hat{\theta}$ is equal to the true population value. \
+\
+Consider the model $$y_i=\beta_0+\beta_1x_{1,i}-\beta_2x_{2,i}+\epsilon_i.$$ Lets provide empirical evidence that the ordinary least squares estimators $\hat\beta_0$, $\hat\beta_1$, and $\hat\beta_2$ are unbiased estimators of $\beta_0$, $\beta_1$, $\beta_2$, respectively, using R.  
+    (a) Set the seed to 1, i.e., `set.seed(1)`.
+    (b) Set the number of observations $n=100$
+    (c) Generate the following model $$y_i=2+3.5x_{1,i}-9.2x_{2,i}+\epsilon_i,$$ where $x_1\sim N(3,6)$, $x_2\sim N(2,4)$, and $\epsilon\sim N(0,100)$. To create a normally distributed variable, use the `rnorm(n, mean, sd)` command in R. 
+    (d) Estimate the model coefficients using the `lm()` command. (Search `?lm()` in the console for more info).
+    (e) Using a `for()` loop, replicate the model above $M=1000$ times and save the coefficient estimates from each iteration. 
+    (f) Using `hist()`, plot the sampling distributions of the coefficient estimates, $\beta_1$ and $\beta_2$. 
+    (g) Add a vertical line to each figure at the mean of the respective variable. Search `?abline()` in your console.
+
+:::{.callout-tip}
+
+### (a)–(c)
+
+I set the seed and generate 100 observations.
+I use the square roots of the variances as standard deviations.
+
+```{r}
+set.seed(1)
+n <- 100
+
+x1 <- rnorm(n, mean = 3, sd = sqrt(6))
+x2 <- rnorm(n, mean = 2, sd = sqrt(4))
+epsilon <- rnorm(n, mean = 0, sd = sqrt(100))
+
+y <- 2 + 3.5 * x1 - 9.2 * x2 + epsilon
+```
+
+### (d)
+
+I estimate the model using `lm()`.
+
+```{r}
+fit <- lm(y ~ x1 + x2)
+round(coef(fit), 4)
+```
+
+The estimates are close to the true coefficients.
+The coefficient on $x_2$ is negative.
+In the question, this coefficient is $-\beta_2$.
+
+### (e)
+
+I generate a new sample in each iteration.
+I repeat this 1,000 times and save the estimates.
+I reverse the sign of the coefficient on $x_2$ to estimate $\beta_2$.
+
+```{r}
+M <- 1000
+
+estimates <- matrix(NA_real_, nrow = M, ncol = 3)
+colnames(estimates) <- c("beta0", "beta1", "beta2")
+
+for (m in seq_len(M)) {
+  x1 <- rnorm(n, mean = 3, sd = sqrt(6))
+  x2 <- rnorm(n, mean = 2, sd = sqrt(4))
+  epsilon <- rnorm(n, mean = 0, sd = sqrt(100))
+
+  y <- 2 + 3.5 * x1 - 9.2 * x2 + epsilon
+
+  fit_m <- lm(y ~ x1 + x2)
+  coefficients <- coef(fit_m)
+
+  estimates[m, ] <- c(
+    coefficients[1],
+    coefficients[2],
+    -coefficients[3]
+  )
+}
+
+round(colMeans(estimates), 4)
+```
+
+### (f)–(g)
+
+I plot the estimates of $\beta_1$ and $\beta_2$.
+The red lines show their simulation means.
+
+```{r}
+hist(
+  estimates[, "beta1"],
+  breaks = 30,
+  main = "Sampling distribution of beta1",
+  xlab = "Estimated beta1",
+  col = "lightblue"
+)
+abline(
+  v = mean(estimates[, "beta1"]),
+  col = "red",
+  lwd = 2
+)
+```
+
+```{r}
+hist(
+  estimates[, "beta2"],
+  breaks = 30,
+  main = "Sampling distribution of beta2",
+  xlab = "Estimated beta2",
+  col = "lightblue"
+)
+abline(
+  v = mean(estimates[, "beta2"]),
+  col = "red",
+  lwd = 2
+)
+```
+
+The simulation means are close to 2, 3.5, and 9.2.
+The histograms are centered near the true values.
+These results support unbiasedness, but a simulation alone does not prove it.
+:::
